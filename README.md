@@ -1,12 +1,13 @@
 # 🎂 My BirthdayTracker (Android)
 
-A premium, native Android application built with Kotlin to help you track, manage, and never forget a birthday again. The app features automated SMS greetings and system notifications using modern Android architecture.
+A premium, native Android application built with Kotlin to help you track, manage, and never forget a birthday again. The app features automated SMS greetings, voice call reminders, and system notifications using modern Android architecture.
 
 ---
 
 ## 🌟 Features
 
-- **Automated Reminders:** Receive local notifications and automated SMS greetings via Twilio on the morning of a birthday.
+- **Multi-Channel Reminders:** Receive local notifications, automated SMS greetings, and **Automated Voice Calls** via Twilio on the morning of a birthday.
+- **Intimation Alerts:** Get notified **one day before** a birthday so you can prepare in advance.
 - **Premium UI/UX:** Built with **Material Design 3**, featuring dynamic cards, smooth transitions, and a clean, modern aesthetic.
 - **Offline First:** All birthday data is stored locally using **Room Database**, ensuring the app works perfectly without an internet connection.
 - **Smart Background Tasks:** Uses **WorkManager** to schedule daily checks that persist even after device reboots.
@@ -22,7 +23,7 @@ A premium, native Android application built with Kotlin to help you track, manag
 - **Database:** [Room Persistence Library](https://developer.android.com/training/data-storage/room)
 - **Background Scheduling:** [WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager)
 - **Networking:** [Retrofit](https://square.github.io/retrofit/) & [Gson](https://github.com/google/gson)
-- **SMS API:** [Twilio Messaging API](https://www.twilio.com/docs/messaging/api)
+- **Communications API:** [Twilio Messaging & Voice API](https://www.twilio.com/docs)
 - **Image Loading:** [Glide](https://github.com/bumptech/glide)
 - **UI Components:** [Material Components for Android](https://material.io/develop/android)
 
@@ -34,21 +35,12 @@ A premium, native Android application built with Kotlin to help you track, manag
 app/src/main/java/com/example/mybirthdaytracker/
 ├── adapters/          # RecyclerView Adapters for Home and Missed lists
 ├── data/              # Room DB: Entities, DAOs, and Database configuration
-├── network/           # Retrofit Client and Twilio API Interface
+├── network/           # Retrofit Client and Twilio API (SMS + Voice)
 ├── repository/        # Repository pattern for data abstraction
 ├── ui/                # UI Fragments (Home, Add, Profile)
-│   ├── add/           # Add Birthday screen logic
-│   ├── home/          # Main dashboard logic
-│   └── profile/       # Settings and notification testing
 ├── utils/             # Date processing and Notification helpers
 ├── viewmodel/         # ViewModels and ViewModelFactories
-└── workers/           # BirthdayReminderWorker (WorkManager logic)
-
-app/src/main/res/
-├── layout/            # XML layout files for fragments and items
-├── navigation/        # Jetpack Navigation Graph (mobile_navigation.xml)
-├── values/            # Colors, strings, and Material 3 themes
-└── drawable/          # App assets and profile images
+└── workers/           # BirthdayReminderWorker (SMS, Voice, and Notification logic)
 ```
 
 ---
@@ -63,13 +55,13 @@ The app uses a `BirthdayEntity` to store name, date of birth, tags, and image pa
 - **ViewModel:** Collects data flows and prepares it for the UI.
 - **Fragments:** Observe the ViewModel and update the RecyclerViews using `ListAdapter` for efficient updates.
 
-### 3. Background Layer (WorkManager)
-The `BirthdayReminderWorker` is scheduled to run every 24 hours (default 8:00 AM).
-1. It queries the local database.
-2. It calculates the `days_left` for each contact using `DateUtils`.
-3. If `days_left == 0`, it triggers:
-    - A **Local Notification** using `NotificationHelper`.
-    - An **Automated SMS** using the `TwilioApi` Retrofit client.
+### 3. Communication Layer (WorkManager + Twilio)
+The `BirthdayReminderWorker` is scheduled to run every 24 hours.
+1. **Intimation (1 Day Before):** It triggers a local notification to alert the user about tomorrow's birthdays.
+2. **On the Day:** It triggers:
+    - A **Local Notification** with high priority.
+    - An **Automated SMS** with a personalized birthday message.
+    - An **Automated Voice Call** that announces the birthday person's name via Text-to-Speech.
 
 ---
 
@@ -90,17 +82,10 @@ The `BirthdayReminderWorker` is scheduled to run every 24 hours (default 8:00 AM
    ```
 
 3. **Build & Run:**
-   - Open the project in **Android Studio Ladybug**.
+   - Open the project in **Android Studio**.
    - Sync Gradle.
    - Run on an emulator or physical device (API 24+).
-
----
-
-## 📸 Screenshots
-
-- **Dashboard:** Clean list of upcoming birthdays with countdown badges.
-- **Add Screen:** Material 3 input fields with date validation.
-- **Notification:** High-priority system alerts.
+   - **Important:** On Android 13+, ensure you grant the "Notification Permission" on first launch.
 
 ---
 
