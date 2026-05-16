@@ -45,10 +45,10 @@ class BirthdayReminderWorker(
                 )
                 
                 // Test SMS
-                sendSms(twilioApi, "Test User", "Twilio SMS & Call test from BirthdayTracker! 🚀")
+                sendSms(twilioApi, "Darshan", "Today is Darshan's birthday! 🎉 Don't forget to wish them! Happy Birthday Darshan! - From BirthdayTracker")
                 
                 // Test Call
-                makeCall(twilioApi, "Test User", "Hello! This is a test call from Birthday Tracker. If today was Darshan's birthday, I would say: Today is Darshan's birthday! Don't forget to wish them. Your notification system is working perfectly!")
+                makeCall(twilioApi, "Darshan", "Hello! This is a test from Birthday Tracker. Today is Darshan's birthday! Don't forget to wish them. Happy Birthday Darshan!")
             }
             return Result.success()
         }
