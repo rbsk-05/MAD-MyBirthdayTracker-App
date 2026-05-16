@@ -14,10 +14,19 @@ interface TwilioApi {
         @Field("To") to: String,
         @Field("From") from: String,
         @Field("Body") body: String
-    ): Response<TwilioMessageResponse>
+    ): Response<TwilioResponse>
+
+    @FormUrlEncoded
+    @POST("Accounts/{accountSid}/Calls.json")
+    suspend fun makeCall(
+        @Path("accountSid") accountSid: String,
+        @Field("To") to: String,
+        @Field("From") from: String,
+        @Field("Twiml") twiml: String
+    ): Response<TwilioResponse>
 }
 
-data class TwilioMessageResponse(
+data class TwilioResponse(
     val sid: String,
     val status: String
 )

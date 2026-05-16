@@ -27,9 +27,29 @@ class BirthdayReminderWorker(
         val allBirthdays = birthdaysFlow.firstOrNull() ?: return Result.success()
 
         val todayBirthdays = allBirthdays.filter { DateUtils.getDaysLeft(it.dob) == 0 }
+        val tomorrowBirthdays = allBirthdays.filter { DateUtils.getDaysLeft(it.dob) == 1 }
 
-        if (todayBirthdays.isEmpty()) {
-            Log.d("BirthdayReminderWorker", "No birthdays today.")
+        if (todayBirthdays.isEmpty() && tomorrowBirthdays.isEmpty()) {
+            Log.d("BirthdayReminderWorker", "No birthdays today or tomorrow.")
+            if (isManualRun()) {
+                NotificationHelper.showNotification(
+                    context,
+                    "System Check",
+                    "Reminder system active. Sending test SMS & Call...",
+                    999
+                )
+                
+                val twilioApi = TwilioClient.create(
+                    BuildConfig.TWILIO_ACCOUNT_SID,
+                    BuildConfig.TWILIO_AUTH_TOKEN
+                )
+                
+                // Test SMS
+                sendSms(twilioApi, "Test User", "Twilio SMS & Call test from BirthdayTracker! 🚀")
+                
+                // Test Call
+                makeCall(twilioApi, "Test User", "Hello! This is a test call from Birthday Tracker. If today was Darshan's birthday, I would say: Today is Darshan's birthday! Don't forget to wish them. Your notification system is working perfectly!")
+            }
             return Result.success()
         }
 
@@ -38,41 +58,55 @@ class BirthdayReminderWorker(
             BuildConfig.TWILIO_AUTH_TOKEN
         )
 
+        // Today's Birthdays
         for (birthday in todayBirthdays) {
-            val messageBody = "Reminder: Today is ${birthday.name}'s birthday! 🎉"
-            
-            // Show Local Notification
-            NotificationHelper.showNotification(
-                context,
-                "Birthday Reminder \uD83C\uDF82",
-                messageBody,
-                birthday.id
-            )
+            val msg = "Today is ${birthday.name}'s birthday! 🎉"
+            NotificationHelper.showNotification(context, "Birthday Today! \uD83C\uDF82", msg, birthday.id)
 
-            // Send Twilio SMS
-            try {
-                if (BuildConfig.TWILIO_ACCOUNT_SID.isNotEmpty() && BuildConfig.TWILIO_TO_PHONE.isNotEmpty()) {
-                    val response = twilioApi.sendMessage(
-                        accountSid = BuildConfig.TWILIO_ACCOUNT_SID,
-                        to = BuildConfig.TWILIO_TO_PHONE,
-                        from = BuildConfig.TWILIO_FROM_PHONE,
-                        body = messageBody
-                    )
-                    
-                    if (response.isSuccessful) {
-                        Log.d("BirthdayReminderWorker", "SMS sent successfully for ${birthday.name}")
-                    } else {
-                        Log.e("BirthdayReminderWorker", "Failed to send SMS: ${response.errorBody()?.string()}")
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("BirthdayReminderWorker", "Exception sending SMS", e)
-                // Returning failure could trigger retry depending on WorkManager config,
-                // but since it's a daily notification, we might just log and continue
-                // so we don't spam them if the API is down for hours.
-            }
+            sendSms(twilioApi, birthday.name, "Happy Birthday, ${birthday.name}! \uD83C\uDF82 - From BirthdayTracker")
+            makeCall(twilioApi, birthday.name, "Hello! This is a reminder that today is ${birthday.name}'s birthday. Don't forget to wish them!")
+        }
+
+        // Tomorrow's Birthdays
+        for (birthday in tomorrowBirthdays) {
+            val msg = "Intimation: ${birthday.name}'s birthday is tomorrow! \uD83D\uDCC5"
+            NotificationHelper.showNotification(context, "Birthday Tomorrow! \uD83D\uDCC5", msg, birthday.id + 1000)
         }
 
         return Result.success()
+    }
+
+    private fun isManualRun(): Boolean = true
+
+    private suspend fun sendSms(twilioApi: com.example.mybirthdaytracker.network.TwilioApi, name: String, message: String) {
+        try {
+            if (BuildConfig.TWILIO_ACCOUNT_SID.isNotEmpty() && BuildConfig.TWILIO_TO_PHONE.isNotEmpty()) {
+                twilioApi.sendMessage(
+                    accountSid = BuildConfig.TWILIO_ACCOUNT_SID,
+                    to = BuildConfig.TWILIO_TO_PHONE,
+                    from = BuildConfig.TWILIO_FROM_PHONE,
+                    body = message
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("BirthdayReminderWorker", "SMS Error", e)
+        }
+    }
+
+    private suspend fun makeCall(twilioApi: com.example.mybirthdaytracker.network.TwilioApi, name: String, voiceMessage: String) {
+        try {
+            if (BuildConfig.TWILIO_ACCOUNT_SID.isNotEmpty() && BuildConfig.TWILIO_TO_PHONE.isNotEmpty()) {
+                val twiml = "<Response><Say>$voiceMessage</Say></Response>"
+                twilioApi.makeCall(
+                    accountSid = BuildConfig.TWILIO_ACCOUNT_SID,
+                    to = BuildConfig.TWILIO_TO_PHONE,
+                    from = BuildConfig.TWILIO_FROM_PHONE,
+                    twiml = twiml
+                )
+                Log.d("BirthdayReminderWorker", "Call initiated for $name")
+            }
+        } catch (e: Exception) {
+            Log.e("BirthdayReminderWorker", "Call Error", e)
+        }
     }
 }
